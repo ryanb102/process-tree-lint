@@ -1,0 +1,7 @@
+# Example process tree with a few deliberate problems, used in the README.
+init (cmd="/sbin/init", restart=always)
+  sshd (cmd="/usr/sbin/sshd -D", restart=always)
+  app (restart=on-failure)
+    worker (cmd="node worker.js")
+    worker (cmd="node worker.js --replica")
+  logger (detach=true)
