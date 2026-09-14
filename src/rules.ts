@@ -74,6 +74,40 @@ const noRestartPolicyWithChildren: Rule = (roots) => {
   return findings;
 };
 
+// A detached process (detach=true) forks away from its parent and is no
+// longer supervised directly; when it exits, something has to be sitting
+// in the ancestry with reaper=true to waitpid() it, or it lingers as a
+// zombie. Walking the tree with the id of the nearest reaping ancestor
+// finds any detached node that has nothing above it doing that job.
+const detachedWithoutReaper: Rule = (roots) => {
+  const findings: Finding[] = [];
+
+  function visit(node: ProcessNode, hasReapingAncestor: boolean): void {
+    const isDetached = node.attrs.detach === 'true';
+    const isReaper = node.attrs.reaper === 'true';
+
+    if (isDetached && !hasReapingAncestor) {
+      findings.push({
+        ruleId: 'detached-without-reaper',
+        severity: 'warning',
+        line: node.line,
+        processName: node.name,
+        message: `process "${node.name}" is detached but has no reaper in its ancestry; orphaned children will not be reaped`,
+      });
+    }
+
+    for (const child of node.children) {
+      visit(child, hasReapingAncestor || isReaper);
+    }
+  }
+
+  for (const root of roots) {
+    visit(root, false);
+  }
+
+  return findings;
+};
+
 const emptyTree: Rule = (roots) => {
   if (roots.length === 0) {
     return [
@@ -89,4 +123,10 @@ const emptyTree: Rule = (roots) => {
   return [];
 };
 
-export const rules: Rule[] = [duplicateProcessName, missingCommand, noRestartPolicyWithChildren, emptyTree];
+export const rules: Rule[] = [
+  duplicateProcessName,
+  missingCommand,
+  noRestartPolicyWithChildren,
+  detachedWithoutReaper,
+  emptyTree,
+];

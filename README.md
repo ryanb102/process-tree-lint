@@ -30,6 +30,11 @@ init (cmd="/sbin/init", restart=always)
 Lines starting with `#` and blank lines are ignored. See
 `examples/sample.ptree` for a file with a few problems baked in.
 
+`detach=true` marks a process that forks away and is no longer directly
+supervised; `reaper=true` marks a process that waits on its orphaned
+descendants (the way a real init process does for PID 1). The linter checks
+that every detached process has a reaper somewhere above it.
+
 ## rules (v0.1)
 
 | rule                          | severity | meaning                                                   |
@@ -37,6 +42,7 @@ Lines starting with `#` and blank lines are ignored. See
 | `missing-command`              | error    | a process has no `cmd` attribute                           |
 | `duplicate-process-name`       | error    | the same name is used for two processes in the same file   |
 | `no-restart-policy-with-children` | warning | a process with children has no `restart` attribute      |
+| `detached-without-reaper`      | warning  | a `detach=true` process has no `reaper=true` ancestor       |
 | `empty-tree`                   | error    | the file defines no processes at all                       |
 
 ## building and running
@@ -55,6 +61,7 @@ Human-readable output:
 examples/sample.ptree:4: error: process "app" has no cmd attribute [missing-command]
 examples/sample.ptree:6: error: process "worker" is already defined at line 5 [duplicate-process-name]
 examples/sample.ptree:7: error: process "logger" has no cmd attribute [missing-command]
+examples/sample.ptree:7: warning: process "logger" is detached but has no reaper in its ancestry; orphaned children will not be reaped [detached-without-reaper]
 ```
 
 Machine-readable output, for feeding into CI or another tool:
@@ -89,7 +96,7 @@ into a CI step.
 
 ## status
 
-Early skeleton: parser, four rules, and the two output modes. Rule set is
+Early skeleton: parser, five rules, and the two output modes. Rule set is
 intentionally small for now — see the issues for what's planned next.
 
 ## license
