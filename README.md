@@ -43,6 +43,7 @@ that every detached process has a reaper somewhere above it.
 | `duplicate-process-name`       | error    | the same name is used for two processes in the same file   |
 | `no-restart-policy-with-children` | warning | a process with children has no `restart` attribute      |
 | `detached-without-reaper`      | warning  | a `detach=true` process has no `reaper=true` ancestor       |
+| `unknown-attribute`            | warning  | an attribute isn't one of `cmd`, `restart`, `detach`, `reaper` (suggests the closest known name if it looks like a typo) |
 | `empty-tree`                   | error    | the file defines no processes at all                       |
 
 ## building and running
@@ -96,7 +97,7 @@ into a CI step.
 
 ## status
 
-Early skeleton: parser, five rules, and the two output modes. Rule set is
+Early skeleton: parser, six rules, and the two output modes. Rule set is
 intentionally small for now — see the issues for what's planned next.
 
 ## license

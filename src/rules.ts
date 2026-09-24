@@ -108,6 +108,72 @@ const detachedWithoutReaper: Rule = (roots) => {
   return findings;
 };
 
+const KNOWN_ATTRS = ['cmd', 'restart', 'detach', 'reaper'];
+
+// Plain edit distance between two strings, used to suggest a known
+// attribute when someone typos one (e.g. "comand" for "cmd").
+function levenshtein(a: string, b: string): number {
+  const dp: number[][] = Array.from({ length: a.length + 1 }, () => new Array(b.length + 1).fill(0));
+  for (let i = 0; i <= a.length; i++) dp[i][0] = i;
+  for (let j = 0; j <= b.length; j++) dp[0][j] = j;
+
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      dp[i][j] =
+        a[i - 1] === b[j - 1]
+          ? dp[i - 1][j - 1]
+          : 1 + Math.min(dp[i - 1][j - 1], dp[i - 1][j], dp[i][j - 1]);
+    }
+  }
+
+  return dp[a.length][b.length];
+}
+
+function closestKnownAttr(attr: string): string | undefined {
+  let best: string | undefined;
+  let bestDistance = Infinity;
+
+  for (const known of KNOWN_ATTRS) {
+    const distance = levenshtein(attr, known);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      best = known;
+    }
+  }
+
+  // Beyond a distance of 2 the match is more likely coincidental than a typo.
+  return bestDistance <= 2 ? best : undefined;
+}
+
+// Attribute names aren't validated anywhere else, so a typo like
+// "restrat=always" silently does nothing instead of failing loudly.
+const unknownAttribute: Rule = (roots) => {
+  const findings: Finding[] = [];
+
+  walk(roots, (node) => {
+    for (const key of Object.keys(node.attrs)) {
+      if (KNOWN_ATTRS.includes(key)) {
+        continue;
+      }
+
+      const suggestion = closestKnownAttr(key);
+      const message = suggestion
+        ? `process "${node.name}" has unknown attribute "${key}", did you mean "${suggestion}"?`
+        : `process "${node.name}" has unknown attribute "${key}"`;
+
+      findings.push({
+        ruleId: 'unknown-attribute',
+        severity: 'warning',
+        line: node.line,
+        processName: node.name,
+        message,
+      });
+    }
+  });
+
+  return findings;
+};
+
 const emptyTree: Rule = (roots) => {
   if (roots.length === 0) {
     return [
@@ -128,5 +194,6 @@ export const rules: Rule[] = [
   missingCommand,
   noRestartPolicyWithChildren,
   detachedWithoutReaper,
+  unknownAttribute,
   emptyTree,
 ];
