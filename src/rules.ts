@@ -189,11 +189,18 @@ const emptyTree: Rule = (roots) => {
   return [];
 };
 
-export const rules: Rule[] = [
-  duplicateProcessName,
-  missingCommand,
-  noRestartPolicyWithChildren,
-  detachedWithoutReaper,
-  unknownAttribute,
-  emptyTree,
+export interface RuleDef {
+  id: string;
+  run: Rule;
+}
+
+export const rules: RuleDef[] = [
+  { id: 'duplicate-process-name', run: duplicateProcessName },
+  { id: 'missing-command', run: missingCommand },
+  { id: 'no-restart-policy-with-children', run: noRestartPolicyWithChildren },
+  { id: 'detached-without-reaper', run: detachedWithoutReaper },
+  { id: 'unknown-attribute', run: unknownAttribute },
+  { id: 'empty-tree', run: emptyTree },
 ];
+
+export const RULE_IDS: string[] = rules.map((r) => r.id);

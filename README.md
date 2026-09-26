@@ -95,10 +95,33 @@ The process exits with status `1` if any file has a parse error or an
 error-severity finding, and `0` otherwise, so it can be dropped straight
 into a CI step.
 
+## configuration
+
+Rules can be turned off with a `.ptreelintrc` file. For each file being
+linted, the linter looks for one starting in that file's directory and
+walking up towards the filesystem root, the same way you'd expect a
+dotfile config to be found. The first one found wins; there's no merging
+across directories.
+
+```json
+{
+  "rules": {
+    "unknown-attribute": false,
+    "detached-without-reaper": "off"
+  }
+}
+```
+
+Any rule not mentioned stays enabled. Values are `true`/`false` or
+`"on"`/`"off"`; anything else, or an unrecognized rule id, is a config
+error and the affected file is reported as failing rather than silently
+ignored. See `examples/.ptreelintrc` for a working example.
+
 ## status
 
-Early skeleton: parser, six rules, and the two output modes. Rule set is
-intentionally small for now — see the issues for what's planned next.
+Early skeleton: parser, six rules, per-file config, and the two output
+modes. Test suite and `--fix` support are next — see the issues for what's
+planned.
 
 ## license
 

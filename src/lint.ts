@@ -7,12 +7,20 @@ export interface LintResult {
   parseErrors: ParseError[];
 }
 
-export function lintSource(source: string): LintResult {
+export interface LintOptions {
+  disabledRules?: Set<string>;
+}
+
+export function lintSource(source: string, options: LintOptions = {}): LintResult {
   const { roots, errors } = parseProcessTree(source);
+  const disabledRules = options.disabledRules ?? new Set<string>();
 
   const findings: Finding[] = [];
   for (const rule of rules) {
-    findings.push(...rule(roots));
+    if (disabledRules.has(rule.id)) {
+      continue;
+    }
+    findings.push(...rule.run(roots));
   }
   findings.sort((a, b) => a.line - b.line);
 

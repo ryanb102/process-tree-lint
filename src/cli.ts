@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 import * as fs from 'fs';
+import * as path from 'path';
 import { lintSource } from './lint';
+import { loadConfig } from './config';
 import { ParseError } from './parser';
 import { Finding } from './types';
 
@@ -27,7 +29,16 @@ function main(): void {
       continue;
     }
 
-    const { findings, parseErrors } = lintSource(source);
+    let disabledRules: Set<string>;
+    try {
+      disabledRules = loadConfig(path.dirname(path.resolve(filePath))).disabledRules;
+    } catch (err) {
+      process.stderr.write(`ptree-lint: ${(err as Error).message}\n`);
+      hasError = true;
+      continue;
+    }
+
+    const { findings, parseErrors } = lintSource(source, { disabledRules });
 
     if (parseErrors.length > 0 || findings.some((f) => f.severity === 'error')) {
       hasError = true;
